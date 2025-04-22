@@ -62,67 +62,111 @@ window.addEventListener('scroll', () => {
     lastScroll = currentScroll;
 });
 
-// Форма обратной связи
-const contactForm = document.querySelector('.contact-form');
-if (contactForm) {
-    contactForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Собираем данные формы
-        const formData = new FormData(this);
-        const formObject = {};
-        formData.forEach((value, key) => {
-            formObject[key] = value;
-        });
-
-        // Анимация отправки
-        const submitButton = this.querySelector('button[type="submit"]');
-        const originalText = submitButton.textContent;
-        submitButton.textContent = 'Отправляем...';
-        submitButton.disabled = true;
-
-        // Имитация отправки данных (здесь можно добавить реальный API)
-        setTimeout(() => {
-            submitButton.textContent = 'Отправлено!';
-            this.reset();
-            
-            setTimeout(() => {
-                submitButton.textContent = originalText;
-                submitButton.disabled = false;
-            }, 2000);
-        }, 1500);
-    });
+// Получение UTM-меток из URL
+function getUTMParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    document.getElementById('utm_source').value = urlParams.get('utm_source') || '';
+    document.getElementById('utm_medium').value = urlParams.get('utm_medium') || '';
+    document.getElementById('utm_campaign').value = urlParams.get('utm_campaign') || '';
 }
 
-// Мобильное меню
-document.addEventListener('DOMContentLoaded', function() {
-    const burgerMenu = document.querySelector('.burger-menu');
-    const navLinks = document.querySelector('.nav-links');
-    
-    burgerMenu.addEventListener('click', function() {
-        burgerMenu.classList.toggle('active');
-        navLinks.classList.toggle('active');
-        document.body.classList.toggle('menu-open'); // Добавляем класс для блокировки прокрутки
-    });
+// Функция для отправки событий через Measurement Protocol
+async function sendToGA4(eventName, eventParams) {
+    const GA4_ENDPOINT = 'https://www.google-analytics.com/mp/collect';
+    const MEASUREMENT_ID = 'G-5S3DZGDC35';
+    const API_SECRET = 'qO2VDrKWTQqbLmTxBfj9sw';
+    const CLIENT_ID = generateClientId(); // Генерируем или получаем существующий client_id
 
-    // Закрытие меню при клике вне его
-    document.addEventListener('click', function(event) {
-        if (!burgerMenu.contains(event.target) && !navLinks.contains(event.target)) {
-            burgerMenu.classList.remove('active');
-            navLinks.classList.remove('active');
-            document.body.classList.remove('menu-open');
-        }
-    });
-
-    // Закрытие меню при клике на ссылку
-    const links = document.querySelectorAll('.nav-links a');
-    links.forEach(link => {
-        link.addEventListener('click', () => {
-            burgerMenu.classList.remove('active');
-            navLinks.classList.remove('active');
-            document.body.classList.remove('menu-open');
+    try {
+        const response = await fetch(`${GA4_ENDPOINT}?measurement_id=${MEASUREMENT_ID}&api_secret=${API_SECRET}`, {
+            method: 'POST',
+            body: JSON.stringify({
+                client_id: CLIENT_ID,
+                events: [{
+                    name: eventName,
+                    params: eventParams
+                }]
+            })
         });
-    });
+
+        if (!response.ok) {
+            throw new Error('GA4 event sending failed');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error sending GA4 event:', error);
+        throw error;
+    }
+}
+
+// Генерация или получение client_id
+function generateClientId() {
+    let clientId = localStorage.getItem('ga_client_id');
+    if (!clientId) {
+        clientId = Math.random().toString(36).substring(2) + '.' + Date.now();
+        localStorage.setItem('ga_client_id', clientId);
+    }
+    return clientId;
+}
+
+// Обработка отправки формы
+document.getElementById('leadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const formData = new FormData(form);
+
+    try {
+        // Отправка события в Google Analytics через Measurement Protocol
+        await sendToGA4('generate_lead', {
+            course: formData.get('course'),
+            source: formData.get('utm_source') || '(direct)',
+            medium: formData.get('utm_medium') || '(none)',
+            campaign: formData.get('utm_campaign') || '(not set)'
+        });
+
+        // Отправка события через gtag (для браузерных событий)
+        gtag('event', 'generate_lead', {
+            'event_category': 'Lead',
+            'event_label': formData.get('course'),
+            'value': 1
+        });
+
+        // Отправка события в Яндекс.Метрику
+        if (typeof ym !== 'undefined') {
+            ym(YOUR_METRIKA_ID, 'reachGoal', 'form_submission', {
+                course: formData.get('course')
+            });
+        }
+
+        // Очистка формы и показ сообщения об успехе
+        form.reset();
+        alert('Спасибо! Мы свяжемся с вами в ближайшее время.');
+    } catch (error) {
+        console.error('Error submitting form:', error);
+        alert('Произошла ошибка при отправке формы. Пожалуйста, попробуйте позже.');
+    }
+});
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    getUTMParams();
+});
+
+// Маска для телефона
+document.querySelector('input[name="phone"]').addEventListener('input', function(e) {
+    let x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+    e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+});
+
+// Обработка мобильного меню
+const burgerMenu = document.querySelector('.burger-menu');
+const navLinks = document.querySelector('.nav-links');
+
+burgerMenu.addEventListener('click', () => {
+    burgerMenu.classList.toggle('active');
+    navLinks.classList.toggle('active');
 });
 
 // Анимация чисел в секции статистики
