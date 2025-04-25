@@ -1169,6 +1169,41 @@ h2 {
         padding: 0.8rem;
         font-size: 1rem;
     }
+
+    /* Program section mobile adjustments */
+    .program {
+        padding: 4rem 0;
+    }
+    
+    .program-grid {
+        gap: 1.5rem;
+    }
+    
+    .program-card {
+        padding: 1.5rem;
+    }
+    
+    .program-header {
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .program-header i {
+        font-size: 2rem;
+    }
+    
+    .program-header h3 {
+        font-size: 1.4rem;
+    }
+    
+    .program-list {
+        font-size: 0.95rem;
+    }
+    
+    .program-list li {
+        margin-bottom: 0.75rem;
+        padding-left: 1.5rem;
+    }
 }
 
 /* Медиа-запросы для адаптивности */
