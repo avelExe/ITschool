@@ -160,14 +160,45 @@ document.querySelector('input[name="phone"]').addEventListener('input', function
     e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
 });
 
-// Обработка мобильного меню
+// Улучшенная обработка мобильного меню
 const burgerMenu = document.querySelector('.burger-menu');
 const navLinks = document.querySelector('.nav-links');
+const body = document.body;
 
-burgerMenu.addEventListener('click', () => {
+// Функция для переключения меню
+function toggleMenu() {
     burgerMenu.classList.toggle('active');
     navLinks.classList.toggle('active');
+    body.classList.toggle('menu-open');
+}
+
+// Обработчик клика на бургер-меню
+burgerMenu.addEventListener('click', toggleMenu);
+
+// Закрытие меню при клике на ссылку
+document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', () => {
+        if (navLinks.classList.contains('active')) {
+            toggleMenu();
+        }
+    });
 });
+
+// Закрытие меню при клике вне его области
+document.addEventListener('click', (e) => {
+    if (navLinks.classList.contains('active') && 
+        !e.target.closest('.nav-links') && 
+        !e.target.closest('.burger-menu')) {
+        toggleMenu();
+    }
+});
+
+// Предотвращение прокрутки при открытом меню
+navLinks.addEventListener('touchmove', (e) => {
+    if (body.classList.contains('menu-open')) {
+        e.preventDefault();
+    }
+}, { passive: false });
 
 // Анимация чисел в секции статистики
 const animateNumbers = () => {
